@@ -54,8 +54,8 @@ read -r -p "EFI partition size in MiB (default 512): " efi_size
 efi_size="${efi_size:-512}"
 read -r -p "Boot partition size in MiB (default 1024): " boot_size
 boot_size="${boot_size:-1024}"
-read -r -p "Root LV size (e.g., 50G or 51200M, default 50G): " root_size
-root_size="${root_size:-50G}"
+read -r -p "Root LV size (e.g., 50G or 51200M, default 10G): " root_size
+root_size="${root_size:-10G}"
 
 # Wipe any existing partition table and signatures
 wipefs -a "$TARGET_DEVICE" 2>/dev/null
