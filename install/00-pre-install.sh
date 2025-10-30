@@ -48,28 +48,38 @@ fi
 
 echo "Partitioning $TARGET_DEVICE..."
 # Ask for partition sizes (with defaults)
-read -r -p "EFI partition size (default 1G): " efi_size
-efi_size="${efi_size:-1G}"
-read -r -p "Swap partition size (default none, e.g. 4G or leave blank): " swap_size
-read -r -p "Root partition size (default remaining, e.g. 50G or leave blank for rest): " root_size
+read -r -p "EFI partition size (default 512M): " efi_size
+efi_size="${efi_size:-512M}"
+read -r -p "Boot partition size (default 1G): " boot_size
+boot_size="${boot_size:-1G}"
+read -r -p "Root LV size (default 50G, remaining for home): " root_size
+root_size="${root_size:-50G}"
 
-parted "$TARGET_DEVICE" -- mklabel gpt
+# Partition with parted
+parted "$TARGET_DEVICE" --script mklabel gpt
 start=1MiB
-parted "$TARGET_DEVICE" -- mkpart primary fat32 "$start" "$efi_size"
-parted "$TARGET_DEVICE" -- set 1 esp on
+parted "$TARGET_DEVICE" --script mkpart primary fat32 "$start" "$efi_size"
+parted "$TARGET_DEVICE" --script set 1 esp on
 start="$efi_size"
+end_boot="$((start + boot_size))"
+parted "$TARGET_DEVICE" --script mkpart primary ext4 "$start" "$end_boot"
+start="$end_boot"
+parted "$TARGET_DEVICE" --script mkpart primary ext4 "$start" 100%
 
-if [[ -n "$swap_size" ]]; then
-  end_swap="$((start + swap_size))"
-  parted "$TARGET_DEVICE" -- mkpart primary linux-swap "$start" "$end_swap"
-  start="$end_swap"
-fi
+echo "Partitioning complete. Setting up LUKS and LVM on ${TARGET_DEVICE}3..."
+# Encrypt the LVM partition (assuming /dev/sda3)
+cryptsetup luksFormat "${TARGET_DEVICE}3"
+cryptsetup open "${TARGET_DEVICE}3" cryptlvm
 
-if [[ -n "$root_size" ]]; then
-  end_root="$((start + root_size))"
-  parted "$TARGET_DEVICE" -- mkpart primary btrfs "$start" "$end_root"
-else
-  parted "$TARGET_DEVICE" -- mkpart primary btrfs "$start" 100%
-fi
+# Create LVM
+pvcreate /dev/mapper/cryptlvm
+vgcreate vg0 /dev/mapper/cryptlvm
+lvcreate -L "$root_size" vg0 -n root
+lvcreate -l 100%FREE vg0 -n home
 
-echo "Partitioning complete. Run 'lsblk $TARGET_DEVICE' to verify."
+echo "LVM setup complete. Partitions:"
+echo "- EFI: ${TARGET_DEVICE}1 (fat32)"
+echo "- Boot: ${TARGET_DEVICE}2 (ext4)"
+echo "- Root: /dev/vg0/root (btrfs or ext4)"
+echo "- Home: /dev/vg0/home (ext4)"
+echo "Run 'lsblk' and format with mkfs commands as needed."
