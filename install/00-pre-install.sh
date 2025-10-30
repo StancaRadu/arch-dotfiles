@@ -1,6 +1,71 @@
 #!/bin/bash
 
+CONFIG_FILE="install.conf"
+
+# Function to load config
+load_config() {
+  if [[ -f "$CONFIG_FILE" ]]; then
+    source "$CONFIG_FILE"
+    echo "Configuration loaded from $CONFIG_FILE"
+    return 0
+  else
+    echo "No configuration file found at $CONFIG_FILE"
+    return 1
+  fi
+}
+
+# Function to prompt for value with default
+prompt_value() {
+  local prompt_text="$1"
+  local default_value="$2"
+  local var_name="$3"
+  local current_value="${!var_name}"
+  
+  if [[ -n "$current_value" ]]; then
+    read -r -p "$prompt_text (current: $current_value, press Enter to keep): " input
+    if [[ -z "$input" ]]; then
+      eval "$var_name='$current_value'"
+    else
+      eval "$var_name='$input'"
+    fi
+  else
+    read -r -p "$prompt_text (default: $default_value): " input
+    eval "$var_name='${input:-$default_value}'"
+  fi
+}
+
+echo "==================================="
+echo "Arch Linux Disk Partitioning Script"
+echo "==================================="
 echo
+
+# Check if config file exists and ask if user wants to use it
+USE_CONFIG=false
+if [[ -f "$CONFIG_FILE" ]]; then
+  read -r -p "Configuration file found. Use values from $CONFIG_FILE? [Y/n]: " use_conf
+  case "${use_conf,,}" in
+    n|no)
+      USE_CONFIG=false
+      ;;
+    *)
+      USE_CONFIG=true
+      load_config
+      ;;
+  esac
+else
+  echo "No configuration file found. You will be prompted for values."
+  echo
+fi
+
+# Get partition size configuration
+echo "Partition Size Configuration"
+echo "----------------------------"
+prompt_value "EFI partition size in MiB" "512" "EFI_SIZE"
+prompt_value "Boot partition size in MiB" "1024" "BOOT_SIZE"
+prompt_value "Root LV size (e.g., 50G or 51200M)" "50G" "ROOT_SIZE"
+echo
+
+# Always prompt for disk selection
 echo "Available disk devices:"
 echo "-----------------------"
 lsblk -pn -o NAME,MODEL,SIZE,TYPE,MOUNTPOINT | sed 's/^/  /'
@@ -49,22 +114,15 @@ if [[ "$clear_confirm" != "CLEAR" ]]; then
 fi
 
 echo "Partitioning $TARGET_DEVICE..."
-# Ask for partition sizes (with defaults) - now in MiB for consistency
-read -r -p "EFI partition size in MiB (default 512): " efi_size
-efi_size="${efi_size:-512}"
-read -r -p "Boot partition size in MiB (default 1024): " boot_size
-boot_size="${boot_size:-1024}"
-read -r -p "Root LV size (e.g., 50G or 51200M, default 10G): " root_size
-root_size="${root_size:-10G}"
 
 # Wipe any existing partition table and signatures
 wipefs -a "$TARGET_DEVICE" 2>/dev/null
 
 # Calculate partition boundaries in MiB (ensures 1MiB alignment)
 efi_start=1
-efi_end=$((efi_start + efi_size))
+efi_end=$((efi_start + EFI_SIZE))
 boot_start=$efi_end
-boot_end=$((boot_start + boot_size))
+boot_end=$((boot_start + BOOT_SIZE))
 lvm_start=$boot_end
 
 # Partition with parted using MiB units for proper alignment
@@ -80,7 +138,7 @@ partprobe "$TARGET_DEVICE"
 sleep 1
 
 echo "Partitioning complete. Setting up LUKS and LVM on ${TARGET_DEVICE}3..."
-# Encrypt the LVM partition
+# Always prompt for encryption password
 echo "You will be prompted to enter a passphrase for disk encryption."
 cryptsetup luksFormat "${TARGET_DEVICE}3"
 cryptsetup open "${TARGET_DEVICE}3" cryptlvm
@@ -88,15 +146,15 @@ cryptsetup open "${TARGET_DEVICE}3" cryptlvm
 # Create LVM
 pvcreate /dev/mapper/cryptlvm
 vgcreate vg0 /dev/mapper/cryptlvm
-lvcreate -L "$root_size" vg0 -n root
+lvcreate -L "$ROOT_SIZE" vg0 -n root
 lvcreate -l 100%FREE vg0 -n home
 
 echo
 echo "=========================================="
 echo "LVM setup complete. Partitions:"
-echo "- EFI:  ${TARGET_DEVICE}1 (${efi_size}MiB, fat32)"
-echo "- Boot: ${TARGET_DEVICE}2 (${boot_size}MiB, ext4)"
-echo "- Root: /dev/vg0/root ($root_size)"
+echo "- EFI:  ${TARGET_DEVICE}1 (${EFI_SIZE}MiB, fat32)"
+echo "- Boot: ${TARGET_DEVICE}2 (${BOOT_SIZE}MiB, ext4)"
+echo "- Root: /dev/vg0/root ($ROOT_SIZE)"
 echo "- Home: /dev/vg0/home (remaining space)"
 echo "=========================================="
 echo
@@ -108,3 +166,24 @@ echo "  mkfs.fat -F32 ${TARGET_DEVICE}1"
 echo "  mkfs.ext4 ${TARGET_DEVICE}2"
 echo "  mkfs.btrfs /dev/vg0/root  # or mkfs.ext4"
 echo "  mkfs.ext4 /dev/vg0/home"
+
+# Offer to save configuration
+echo
+read -r -p "Save partition sizes to $CONFIG_FILE for future use? [Y/n]: " save_conf
+case "${save_conf,,}" in
+  n|no)
+    echo "Configuration not saved."
+    ;;
+  *)
+    cat > "$CONFIG_FILE" << EOF
+# Arch Linux Installation Configuration
+# Edit these values as needed
+
+# Partition sizes
+EFI_SIZE=$EFI_SIZE
+BOOT_SIZE=$BOOT_SIZE
+ROOT_SIZE=$ROOT_SIZE
+EOF
+    echo "Configuration saved to $CONFIG_FILE"
+    ;;
+esac
