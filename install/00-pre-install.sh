@@ -66,7 +66,7 @@ if [[ "$USE_CONFIG" == false ]]; then
   echo "---------------------------------------------------------------"
   prompt_value "EFI partition size" "512M" "EFI_SIZE"
   prompt_value "Boot partition size" "1G" "BOOT_SIZE"
-  prompt_value "Root volume size" "50G" "ROOT_SIZE"
+  prompt_value "Root volume size" "8G" "ROOT_SIZE"
   prompt_value "Home volume size (leave empty for remaining space)" "" "HOME_SIZE"
   echo
 fi
@@ -84,9 +84,10 @@ while true; do
 done
 
 echo
-echo "==========================================="
+echo "==============================================="
 echo "  FINAL WARNING: $TARGET_DEVICE WILL BE WIPED"
-echo "==========================================="
+echo "==============================================="
+echo
 echo "EFI: $EFI_SIZE | Boot: $BOOT_SIZE | Root: $ROOT_SIZE | Home: ${HOME_SIZE:-remaining}"
 read -r -p "Type 'yes' to continue: " confirm
 [[ "$confirm" != "yes" ]] && echo "Aborted." && exit 1
@@ -134,15 +135,24 @@ if [[ -n "$HOME_SIZE" ]]; then
 else
   lvcreate -l 100%FREE vg0 -n home
 fi
+vgscan
+vgscan -ay
 
 echo
-echo "=========================================="
-echo "Setup complete!"
-echo "=========================================="
+echo "==================="
+echo "  Setup complete!"
+echo "=================="
 lsblk "$TARGET_DEVICE"
-echo
-echo "Format with:"
-echo "  mkfs.fat -F32 ${TARGET_DEVICE}1"
-echo "  mkfs.ext4 ${TARGET_DEVICE}2"
-echo "  mkfs.ext4 /dev/vg0/root"
-echo "  mkfs.ext4 /dev/vg0/home"
+
+mkfs.fat -F32 "${TARGET_DEVICE}1"         # EFI partition (FAT32 required for UEFI)
+mkfs.ext4 "${TARGET_DEVICE}2"             # Boot partition
+mkfs.ext4 /dev/vg0/root                   # Root logical volume
+mkfs.ext4 /dev/vg0/home                   # Home logical volume
+
+mount /dev/vg0/root /mnt
+mkdir /mnt/boot
+mount "${TARGET_DEVICE}2" /mnt/boot
+mkdir /mnt/home
+mount /dev/vg0/home /mnt/home
+
+bash ./01-base-install.sh
