@@ -1,6 +1,6 @@
 #!/bin/bash
 
-CONFIG_FILE="arch-install.conf"
+CONFIG_FILE="install.conf"
 
 # Function to load config
 load_config() {
@@ -50,20 +50,32 @@ if [[ -f "$CONFIG_FILE" ]]; then
     *)
       USE_CONFIG=true
       load_config
+      echo "Using configuration:"
+      echo "  EFI Size:  ${EFI_SIZE}MiB"
+      echo "  Boot Size: ${BOOT_SIZE}MiB"
+      echo "  Root Size: ${ROOT_SIZE}"
+      echo
       ;;
   esac
-else
-  echo "No configuration file found. You will be prompted for values."
-  echo
 fi
 
-# Get partition size configuration
-echo "Partition Size Configuration"
-echo "----------------------------"
-prompt_value "EFI partition size in MiB" "512" "EFI_SIZE"
-prompt_value "Boot partition size in MiB" "1024" "BOOT_SIZE"
-prompt_value "Root LV size (e.g., 50G or 51200M)" "50G" "ROOT_SIZE"
-echo
+# Get partition size configuration only if not using config
+if [[ "$USE_CONFIG" == false ]]; then
+  echo "Partition Size Configuration"
+  echo "----------------------------"
+  prompt_value "EFI partition size in MiB" "512" "EFI_SIZE"
+  prompt_value "Boot partition size in MiB" "1024" "BOOT_SIZE"
+  prompt_value "Root LV size (e.g., 50G or 51200M)" "50G" "ROOT_SIZE"
+  echo
+else
+  echo "No configuration file found. You will be prompted for values."
+  echo "Partition Size Configuration"
+  echo "----------------------------"
+  prompt_value "EFI partition size in MiB" "512" "EFI_SIZE"
+  prompt_value "Boot partition size in MiB" "1024" "BOOT_SIZE"
+  prompt_value "Root LV size (e.g., 50G or 51200M)" "50G" "ROOT_SIZE"
+  echo
+fi
 
 # Always prompt for disk selection
 echo "Available disk devices:"
