@@ -67,14 +67,6 @@ if [[ "$USE_CONFIG" == false ]]; then
   prompt_value "Boot partition size in MiB" "1024" "BOOT_SIZE"
   prompt_value "Root LV size (e.g., 50G or 51200M)" "50G" "ROOT_SIZE"
   echo
-else
-  echo "No configuration file found. You will be prompted for values."
-  echo "Partition Size Configuration"
-  echo "----------------------------"
-  prompt_value "EFI partition size in MiB" "512" "EFI_SIZE"
-  prompt_value "Boot partition size in MiB" "1024" "BOOT_SIZE"
-  prompt_value "Root LV size (e.g., 50G or 51200M)" "50G" "ROOT_SIZE"
-  echo
 fi
 
 # Always prompt for disk selection
