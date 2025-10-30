@@ -1,3 +1,5 @@
+#!/bin/bash
+
 echo
 echo "Available disk devices:"
 echo "-----------------------"
@@ -47,23 +49,30 @@ if [[ "$clear_confirm" != "CLEAR" ]]; then
 fi
 
 echo "Partitioning $TARGET_DEVICE..."
-# Ask for partition sizes (with defaults)
-read -r -p "EFI partition size (default 512M): " efi_size
-efi_size="${efi_size:-512M}"
-read -r -p "Boot partition size (default 1G): " boot_size
-boot_size="${boot_size:-1G}"
-read -r -p "Root LV size (default 10G, remaining for home): " root_size
-root_size="${root_size:-10G}"
+# Ask for partition sizes (with defaults) - now in MiB for consistency
+read -r -p "EFI partition size in MiB (default 512): " efi_size
+efi_size="${efi_size:-512}"
+read -r -p "Boot partition size in MiB (default 1024): " boot_size
+boot_size="${boot_size:-1024}"
+read -r -p "Root LV size (e.g., 50G or 51200M, default 50G): " root_size
+root_size="${root_size:-50G}"
 
-# Wipe any existing partition table
-wipefs -a "$TARGET_DEVICE"
+# Wipe any existing partition table and signatures
+wipefs -a "$TARGET_DEVICE" 2>/dev/null
 
-# Partition with parted
-parted "$TARGET_DEVICE" --script mklabel gpt
-parted "$TARGET_DEVICE" --script mkpart primary fat32 1MiB "$efi_size"
+# Calculate partition boundaries in MiB (ensures 1MiB alignment)
+efi_start=1
+efi_end=$((efi_start + efi_size))
+boot_start=$efi_end
+boot_end=$((boot_start + boot_size))
+lvm_start=$boot_end
+
+# Partition with parted using MiB units for proper alignment
+parted "$TARGET_DEVICE" --script --align optimal mklabel gpt
+parted "$TARGET_DEVICE" --script --align optimal mkpart primary fat32 ${efi_start}MiB ${efi_end}MiB
 parted "$TARGET_DEVICE" --script set 1 esp on
-parted "$TARGET_DEVICE" --script mkpart primary ext4 "$efi_size" "$(echo "$efi_size + $boot_size" | bc)M"
-parted "$TARGET_DEVICE" --script mkpart primary "$(echo "$efi_size + $boot_size" | bc)M" 100%
+parted "$TARGET_DEVICE" --script --align optimal mkpart primary ext4 ${boot_start}MiB ${boot_end}MiB
+parted "$TARGET_DEVICE" --script --align optimal mkpart primary ${lvm_start}MiB 100%
 
 # Wait for kernel to re-read partition table
 sleep 2
@@ -71,7 +80,8 @@ partprobe "$TARGET_DEVICE"
 sleep 1
 
 echo "Partitioning complete. Setting up LUKS and LVM on ${TARGET_DEVICE}3..."
-# Encrypt the LVM partition (assuming /dev/sda3)
+# Encrypt the LVM partition
+echo "You will be prompted to enter a passphrase for disk encryption."
 cryptsetup luksFormat "${TARGET_DEVICE}3"
 cryptsetup open "${TARGET_DEVICE}3" cryptlvm
 
@@ -81,9 +91,20 @@ vgcreate vg0 /dev/mapper/cryptlvm
 lvcreate -L "$root_size" vg0 -n root
 lvcreate -l 100%FREE vg0 -n home
 
+echo
+echo "=========================================="
 echo "LVM setup complete. Partitions:"
-echo "- EFI: ${TARGET_DEVICE}1 (fat32)"
-echo "- Boot: ${TARGET_DEVICE}2 (ext4)"
-echo "- Root: /dev/vg0/root (btrfs or ext4)"
-echo "- Home: /dev/vg0/home (ext4)"
-echo "Run 'lsblk' and format with mkfs commands as needed."
+echo "- EFI:  ${TARGET_DEVICE}1 (${efi_size}MiB, fat32)"
+echo "- Boot: ${TARGET_DEVICE}2 (${boot_size}MiB, ext4)"
+echo "- Root: /dev/vg0/root ($root_size)"
+echo "- Home: /dev/vg0/home (remaining space)"
+echo "=========================================="
+echo
+echo "Partition layout:"
+lsblk "$TARGET_DEVICE"
+echo
+echo "Format partitions with:"
+echo "  mkfs.fat -F32 ${TARGET_DEVICE}1"
+echo "  mkfs.ext4 ${TARGET_DEVICE}2"
+echo "  mkfs.btrfs /dev/vg0/root  # or mkfs.ext4"
+echo "  mkfs.ext4 /dev/vg0/home"
