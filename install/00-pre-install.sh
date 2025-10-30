@@ -95,28 +95,26 @@ while true; do
     continue
   fi
   read -r -p "Confirm $sel? [y/N]: " confirm
-  case "${confirm,,}" in
-    y|yes)
-      TARGET_DEVICE="$sel"
-      export TARGET_DEVICE
-      echo "Selected: $TARGET_DEVICE"
-      break
-      ;;
-    *)
-      echo "Canceled. Try again."
-      ;;
-  esac
+  [[ "${confirm,,}" =~ ^(y|yes)$ ]] && TARGET_DEVICE="$sel" && export TARGET_DEVICE && echo "Selected: $TARGET_DEVICE" && break
+  echo "Canceled. Try again."
 done
 
 echo
-echo "WARNING: Clearing the disk will delete ALL partitions and data on $TARGET_DEVICE."
-echo "         This action is irreversible. Ensure you have backups."
+echo "=========================================="
+echo "WARNING: ALL DATA ON $TARGET_DEVICE WILL BE DESTROYED"
+echo "=========================================="
+echo "This will:"
+echo "  - Delete all partitions on $TARGET_DEVICE"
+echo "  - Create encrypted LVM volumes"
+echo "  - EFI: ${EFI_SIZE}MiB | Boot: ${BOOT_SIZE}MiB | Root: ${ROOT_SIZE}"
+echo
 read -r -p "Type 'CLEAR' to proceed or anything else to abort: " clear_confirm
 if [[ "$clear_confirm" != "CLEAR" ]]; then
-  echo "Aborted disk clearing."
+  echo "Aborted."
   exit 1
 fi
 
+echo
 echo "Partitioning $TARGET_DEVICE..."
 
 # Wipe any existing partition table and signatures
@@ -170,24 +168,3 @@ echo "  mkfs.fat -F32 ${TARGET_DEVICE}1"
 echo "  mkfs.ext4 ${TARGET_DEVICE}2"
 echo "  mkfs.btrfs /dev/vg0/root  # or mkfs.ext4"
 echo "  mkfs.ext4 /dev/vg0/home"
-
-# Offer to save configuration
-echo
-read -r -p "Save partition sizes to $CONFIG_FILE for future use? [Y/n]: " save_conf
-case "${save_conf,,}" in
-  n|no)
-    echo "Configuration not saved."
-    ;;
-  *)
-    cat > "$CONFIG_FILE" << EOF
-# Arch Linux Installation Configuration
-# Edit these values as needed
-
-# Partition sizes
-EFI_SIZE=$EFI_SIZE
-BOOT_SIZE=$BOOT_SIZE
-ROOT_SIZE=$ROOT_SIZE
-EOF
-    echo "Configuration saved to $CONFIG_FILE"
-    ;;
-esac
