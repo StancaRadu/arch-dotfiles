@@ -1,6 +1,6 @@
 #!/bin/bash
 
-CONFIG_FILE="install.conf"
+CONFIG_FILE="arch-install.conf"
 
 # Function to load config
 load_config() {
