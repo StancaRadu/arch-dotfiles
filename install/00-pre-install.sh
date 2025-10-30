@@ -52,19 +52,23 @@ read -r -p "EFI partition size (default 512M): " efi_size
 efi_size="${efi_size:-512M}"
 read -r -p "Boot partition size (default 1G): " boot_size
 boot_size="${boot_size:-1G}"
-read -r -p "Root LV size (default 50G, remaining for home): " root_size
-root_size="${root_size:-50G}"
+read -r -p "Root LV size (default 10G, remaining for home): " root_size
+root_size="${root_size:-10G}"
+
+# Wipe any existing partition table
+wipefs -a "$TARGET_DEVICE"
 
 # Partition with parted
 parted "$TARGET_DEVICE" --script mklabel gpt
-start=1MiB
-parted "$TARGET_DEVICE" --script mkpart primary fat32 "$start" "$efi_size"
+parted "$TARGET_DEVICE" --script mkpart primary fat32 1MiB "$efi_size"
 parted "$TARGET_DEVICE" --script set 1 esp on
-start="$efi_size"
-end_boot="$((start + boot_size))"
-parted "$TARGET_DEVICE" --script mkpart primary ext4 "$start" "$end_boot"
-start="$end_boot"
-parted "$TARGET_DEVICE" --script mkpart primary ext4 "$start" 100%
+parted "$TARGET_DEVICE" --script mkpart primary ext4 "$efi_size" "$(echo "$efi_size + $boot_size" | bc)M"
+parted "$TARGET_DEVICE" --script mkpart primary "$(echo "$efi_size + $boot_size" | bc)M" 100%
+
+# Wait for kernel to re-read partition table
+sleep 2
+partprobe "$TARGET_DEVICE"
+sleep 1
 
 echo "Partitioning complete. Setting up LUKS and LVM on ${TARGET_DEVICE}3..."
 # Encrypt the LVM partition (assuming /dev/sda3)
