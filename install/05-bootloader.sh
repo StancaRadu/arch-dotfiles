@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source /root/arch-dotfiles/install.conf
+source ./install.conf
 
 if [[ -z "$TARGET_DEVICE" ]]; then
   read -rp "Enter target device (e.g. /dev/sda): " TARGET_DEVICE

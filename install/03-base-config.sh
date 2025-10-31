@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source /root/arch-dotfiles/install.conf
+source ./install.conf
 
 echo "The next command will open the mkinitcpio.conf file in nano editor. Look for the HOOKS= line and ensure 'encrypt' and 'lvm2' are included after 'block'. Save and exit."
 read -p "Press Enter to continue..."

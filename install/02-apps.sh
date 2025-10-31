@@ -1,5 +1,5 @@
 #!/bin/bash
-source /root/arch-dotfiles/install.conf
+source ./install.conf
 
 
 # Load package lists
