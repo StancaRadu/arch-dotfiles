@@ -1,8 +1,29 @@
 base
 base-devel
+
 linux
 linux-firmware
 linux-headers
+
+mesa
+# nvidia
+# nvidia-utils
+# intel-media-driver
+# libva-mesa-driver #AMD
+
+dosfstools
+grub
+efibootmgr
+lvm2
 networkmanager
+openssh
+sudo
+
+reflector
+
+gdm
+
+hyprland
+
 git
 nano

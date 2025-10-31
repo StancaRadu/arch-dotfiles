@@ -155,4 +155,7 @@ mount "${TARGET_DEVICE}2" /mnt/boot
 mkdir /mnt/home
 mount /dev/vg0/home /mnt/home
 
+export TARGET_DEVICE
+sed -i "s|^TARGET_DEVICE=.*|TARGET_DEVICE=\"$TARGET_DEVICE\"|" /root/arch-dotfiles/install.conf
+
 bash ./01-base-install.sh
