@@ -1,9 +1,9 @@
 #!/bin/bash
 
-pacstrap -i /mnt base
+pacstrap -i /mnt base git
 
 genfstab -U -p /mnt >> /mnt/etc/fstab
 
-arch-chroot /mnt
+git clone https://github.com/StancaRadu/arch-dotfiles.git /mnt/root/arch-dotfiles
 
-bash ./02-base-config.sh
+arch-chroot /mnt/root/arch-dotfiles/install ./02-base-config.sh
