@@ -25,4 +25,4 @@ echo "The next command will open the grub configuration file in nano editor. Ens
 read -p "Press Enter to continue..."
 nano /etc/etc/grub
 
-bash ./03-apps.sh
+bash ./04-user-setup.sh

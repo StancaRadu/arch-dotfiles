@@ -12,4 +12,4 @@ systemctl enable NetworkManager
 systemctl enable sshd
 systemctl enable gdm
 
-bash ./04-user-setup.sh
+bash ./03-base-config.sh
