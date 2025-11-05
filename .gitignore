@@ -1,0 +1,15 @@
+# Personal git config (contains name, email, credentials)
+stow/git/.gitconfig
+
+# Backup directories
+*-backup/
+dotfiles-backup*/
+
+# System-specific files
+.DS_Store
+*.swp
+*.swo
+*~
+
+# Secrets and API keys
+secrets/api-keys.conf
