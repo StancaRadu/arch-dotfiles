@@ -1,0 +1,131 @@
+/* ============================================
+   WOFI LAUNCHER - Matching Hyprland Theme
+   Colors: Cyan (#33ccff) & Green (#00ff99)
+   ============================================ */
+
+* {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 14px;
+}
+
+/* Main Window */
+window {
+  background-color: rgba(30, 30, 40, 0.95);
+  border: 2px solid #33ccff;
+  border-radius: 10px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+}
+
+/* Outer Box */
+#outer-box {
+  margin: 8px;
+  padding: 0;
+}
+
+/* Input Field */
+#input {
+  background-color: rgba(50, 50, 60, 0.8);
+  color: #e0e0e0;
+  border: 2px solid #33ccff;
+  border-radius: 8px;
+  padding: 10px 15px;
+  margin: 8px;
+  font-weight: 600;
+  outline: none;
+}
+
+#input:focus {
+  border: 2px solid #00ff99;
+  background-color: rgba(51, 204, 255, 0.1);
+  box-shadow: 0 0 10px rgba(51, 204, 255, 0.3);
+}
+
+#input image {
+  color: #33ccff;
+  margin-right: 8px;
+}
+
+/* Scroll Area */
+#scroll {
+  margin: 8px;
+}
+
+/* Inner Box (List Container) */
+#inner-box {
+  background-color: transparent;
+}
+
+/* List Items */
+#entry {
+  background-color: transparent;
+  color: #e0e0e0;
+  padding: 8px 12px;
+  margin: 2px 0;
+  border-radius: 6px;
+  border-left: 2px solid transparent;
+  transition: all 0.2s ease;
+}
+
+#entry:hover {
+  background-color: rgba(51, 204, 255, 0.2);
+  border-left: 2px solid #33ccff;
+}
+
+#entry:selected {
+  background: linear-gradient(
+    90deg,
+    rgba(51, 204, 255, 0.3),
+    rgba(0, 255, 153, 0.2)
+  );
+  color: #33ccff;
+  border-left: 2px solid #00ff99;
+  font-weight: 700;
+  box-shadow: 0 0 8px rgba(51, 204, 255, 0.3);
+}
+
+/* Entry Text */
+#text {
+  color: inherit;
+  padding-left: 8px;
+}
+
+#entry:selected #text {
+  color: #e0e0e0;
+  font-weight: 600;
+}
+
+/* Entry Icon */
+#img {
+  margin-right: 8px;
+  opacity: 0.8;
+}
+
+#entry:selected #img {
+  opacity: 1;
+}
+
+/* No Results Message */
+#text:disabled {
+  color: #888888;
+  font-style: italic;
+}
+
+/* Scrollbar */
+scrollbar {
+  background-color: transparent;
+  width: 8px;
+}
+
+scrollbar slider {
+  background-color: rgba(51, 204, 255, 0.3);
+  border-radius: 4px;
+  min-height: 20px;
+}
+
+scrollbar slider:hover {
+  background-color: rgba(51, 204, 255, 0.5);
+}
+
+scrollbar slider:active {
+  background-color: #33ccff;
+}
