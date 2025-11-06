@@ -1,6 +1,3 @@
-# Personal git config (contains name, email, credentials)
-stow/git/.gitconfig
-
 # Backup directories
 *-backup/
 dotfiles-backup*/
@@ -13,3 +10,4 @@ dotfiles-backup*/
 
 # Secrets and API keys
 secrets/api-keys.conf
+stow/git/.gitconfig

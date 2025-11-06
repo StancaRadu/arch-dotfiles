@@ -29,10 +29,6 @@
       "key": "Kernel"
     },
     {
-      "type": "uptime",
-      "key": "Uptime"
-    },
-    {
       "type": "packages",
       "key": "Packages"
     },
@@ -69,19 +65,6 @@
     {
       "type": "gpu",
       "key": "GPU"
-    },
-    {
-      "type": "memory",
-      "key": "Memory"
-    },
-    {
-      "type": "disk",
-      "key": "Disk"
-    },
-    "separator",
-    {
-      "type": "colors",
-      "symbol": "circle"
     }
   ]
 }
